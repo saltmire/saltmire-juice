@@ -1,7 +1,14 @@
 # Saltmire Juice — Game Feel Kit for Godot 4
 
+![Godot 4.6+](https://img.shields.io/badge/Godot-4.6%2B-478cbf?logo=godotengine&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+
 A tiny, free (MIT) drop-in kit for the little effects that make a game feel good.
 No dependencies, no editor bloat — one autoload with a clean API.
+
+![Saltmire Juice demo](media/preview.gif)
+
+**▶ [Try the playable demo in your browser](https://saltmire.itch.io/saltmire-juice)** (click to punch)
 
 Built for Godot **4.6+**. Extracted and generalized from the
 [Saltmire Survivors Template](https://saltmire.itch.io/survivors-template-godot).

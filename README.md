@@ -57,6 +57,10 @@ Run the included `demo/demo.tscn` to see everything (it auto-plays; click to pun
 - `hitstop` uses `Engine.time_scale`; nested calls are safe (the latest wins).
 - Damage numbers are pooled, so spamming them is cheap.
 
+## ⚡ Want the whole combo in one call?
+
+Juice, [FX](https://saltmire.itch.io/saltmire-fx), [Trail](https://saltmire.itch.io/saltmire-trail), [Spark](https://saltmire.itch.io/saltmire-spark) and [Transitions](https://saltmire.itch.io/saltmire-transitions-scene-transition-kit-for-godot-4) are free and standalone. **[Saltmire Impact](https://saltmire.itch.io/saltmire-impact)** wires the whole family into one-line combo hits — shake + flash + particles + slow-mo from a single call. If Juice saved you time, Impact saves you the wiring.
+
 ## License
 
 MIT — use it in anything, commercial or not. See `LICENSE.txt`.

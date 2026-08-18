@@ -70,25 +70,82 @@ func hitstop(duration: float = 0.08, time_scale: float = 0.0) -> void:
 # ---------------------------------------------------------------------------
 # Flash (tint a CanvasItem then fade back)
 # ---------------------------------------------------------------------------
+# [FIX 1.1.0] Same root cause as pop(), found while fixing it — not reported.
+# Old version: tweens piled up on repeated calls, and `back_to` defaulted to
+# white, so flashing a node whose modulate was NOT white repainted it white for
+# good. Now the original modulate is remembered and the running tween is killed.
+var _flashes: Dictionary = {}
+
 func flash(target: CanvasItem, color: Color = Color(4, 4, 4, 1),
-		duration: float = 0.15, back_to: Color = Color(1, 1, 1, 1)) -> void:
+		duration: float = 0.15, back_to: Variant = null) -> void:
 	if target == null:
 		return
+	var rest: Color
+	if _flashes.has(target):
+		var e: Dictionary = _flashes[target]
+		rest = e["rest"]
+		var old: Tween = e["tween"]
+		if old != null and old.is_valid():
+			old.kill()
+	else:
+		rest = target.modulate          # the node's OWN colour, not an assumed white
+	if back_to != null:
+		rest = back_to                  # explicit target still wins
 	target.modulate = color
 	var t := target.create_tween()
-	t.tween_property(target, "modulate", back_to, duration)
+	t.tween_property(target, "modulate", rest, duration)
+	_flashes[target] = {"tween": t, "rest": rest}
+	t.finished.connect(func() -> void:
+		if is_instance_valid(target):
+			target.modulate = rest
+		_flashes.erase(target))
 
 # ---------------------------------------------------------------------------
 # Scale punch (juicy pop)
 # ---------------------------------------------------------------------------
+# [FIX 1.1.0] Reported by Scoremonger on itch (2026-07-27). Two bugs, one cause:
+# the old version read `node.scale` as the rest scale and never stopped the
+# previous tween.
+#   1. TWEEN PILE-UP (what was reported): calling pop() again mid-animation left
+#      the old tween alive. Two tweens then fought over the same property every
+#      frame, so the second pop looked like it did nothing. Harmless at 0.18s,
+#      very visible at 1s.
+#   2. SCALE DRIFT (worse, and not reported): mid-animation `node.scale` is not
+#      the rest scale — it is wherever the elastic curve happens to be, e.g.
+#      1.12x. That value became the new "base", so the node NEVER returned to its
+#      real size. Repeated pops inflated it permanently.
+# Fix: remember the true rest scale per node, and kill the running tween before
+# starting a new one. `kill()` does not emit `finished`, so the entry is cleared
+# by the finish handler of whichever tween actually completes.
+var _pops: Dictionary = {}
+
 func pop(node: Node, scale_mult: float = 1.25, duration: float = 0.18) -> void:
 	if node == null or not ("scale" in node):
 		return
-	var base: Vector2 = node.scale
+	var base: Vector2
+	if _pops.has(node):
+		var e: Dictionary = _pops[node]
+		base = e["base"]                      # the REST scale, not the current one
+		var old: Tween = e["tween"]
+		if old != null and old.is_valid():
+			old.kill()
+	else:
+		base = node.scale
 	node.scale = base * scale_mult
 	var t := node.create_tween()
 	t.tween_property(node, "scale", base, duration) \
 		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	_pops[node] = {"tween": t, "base": base}
+	# Restore the exact rest scale on finish: TRANS_ELASTIC can land a hair off.
+	t.finished.connect(func() -> void:
+		if is_instance_valid(node):
+			node.scale = base
+		_pops.erase(node))
+
+## Forget the stored rest scale for `node`. Only needed if you resize a node on
+## purpose between pops — otherwise the next pop would spring back to the old size.
+func pop_reset(node: Node) -> void:
+	_pops.erase(node)
 
 # ---------------------------------------------------------------------------
 # Damage numbers (pooled floating labels)
